@@ -11,10 +11,10 @@ spec:
         resources:
           kinds: ["Pod"]
       exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
-        # [FIX] Bỏ qua nếu Pod là Job/CronJob (thường có label job-name)
+        # [FIX]: Gom tat ca vao trong 'any'
         any:
+        - resources:
+            namespaces: ["kube-system", "kyverno", "argocd"]
         - resources:
             selector:
               matchExpressions:
