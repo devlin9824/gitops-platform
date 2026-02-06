@@ -1,0 +1,6 @@
+replicaCount: 1
+image:
+  repository: nginx
+  tag: 1.25.3 # Tag hợp lệ (để qua cửa ải tag latest)
+security:
+  runAsNonRoot: false # <--- LỖI: Policy bắt buộc phải là true
