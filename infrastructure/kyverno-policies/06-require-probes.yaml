@@ -10,15 +10,18 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-      exclude:
-        # [FIX]: Gom tat ca vao trong 'any'
-        any:
-        - resources:
-            namespaces: ["kube-system", "kyverno", "argocd"]
-        - resources:
-            selector:
-              matchExpressions:
-              - {key: job-name, operator: Exists}
+      # [CHANGE] Dùng Preconditions thay vì Exclude để tránh lỗi cú pháp
+      preconditions:
+        all:
+        # 1. Chỉ check nếu Namespace KHONG nằm trong danh sách này
+        - key: "{{ request.object.metadata.namespace }}"
+          operator: AnyNotIn
+          value: ["kube-system", "kyverno", "argocd"]
+        # 2. Chỉ check nếu Pod KHONG phải là Job (Job thường có label job-name)
+        # Logic: Nếu lấy label 'job-name' mà ra rỗng ('') -> Tức là Pod thường -> Check tiếp.
+        - key: "{{ request.object.metadata.labels['job-name'] || '' }}"
+          operator: Equals
+          value: ""
       validate:
         message: "Container phải khai báo livenessProbe và readinessProbe (trừ Job/CronJob)."
         pattern:
