@@ -4,7 +4,7 @@ metadata:
   name: unique-ingress-host
 spec:
   validationFailureAction: Enforce
-  background: false # Bắt buộc false để gọi API Server realtime
+  background: false
   rules:
     - name: check-unique-host
       match:
@@ -14,10 +14,9 @@ spec:
         - name: all_hosts
           apiCall:
             urlPath: "/networking.k8s.io/v1/ingresses"
-            # [FIX] Lọc bỏ UID hiện tại và làm phẳng mảng host
             jmesPath: "items[?metadata.uid!='{{request.object.metadata.uid}}'].spec.rules[].host | []"
       validate:
-        message: "Domain này đã được sử dụng bởi App khác. Vui lòng kiểm tra lại."
+        message: "Domain này đã được sử dụng bởi App khác."
         foreach:
           - list: "request.object.spec.rules[].host"
             deny:
