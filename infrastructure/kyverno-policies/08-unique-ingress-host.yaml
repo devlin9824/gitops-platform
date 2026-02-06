@@ -9,19 +9,23 @@ spec:
     - name: check-unique-host
       match:
         resources:
-          kinds: ["Ingress"]
+          kinds:
+            - Ingress
+
       context:
         - name: all_hosts
           apiCall:
             urlPath: "/networking.k8s.io/v1/ingresses"
-            jmesPath: "items[?metadata.uid!='{{request.object.metadata.uid}}'].spec.rules[].host | []"
+            # Lấy tất cả host của các Ingress khác (không phải chính nó)
+            jmesPath: "items[?!(metadata.name=='{{request.object.metadata.name}}' && metadata.namespace=='{{request.object.metadata.namespace}}')].spec.rules[].host"
+
       validate:
-        message: "Domain này đã được sử dụng bởi App khác."
+        message: "Domain này đã được sử dụng bởi Ingress khác trong cluster."
         foreach:
           - list: "request.object.spec.rules[].host"
             deny:
               conditions:
                 all:
                   - key: "{{ element }}"
-                    operator: AnyIn
+                    operator: In
                     value: "{{ all_hosts }}"
