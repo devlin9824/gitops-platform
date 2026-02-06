@@ -2,6 +2,9 @@ apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
   name: require-probes
+  annotations:
+    # Chỉ auto-gen cho workload dài hạn, không auto-gen cho Job/CronJob
+    pod-policies.kyverno.io/autogen-controllers: Deployment,StatefulSet,DaemonSet
 spec:
   validationFailureAction: Enforce
   background: true
@@ -9,31 +12,23 @@ spec:
     - name: check-probes
       match:
         resources:
-          kinds:
-            - Pod
-
-      # Dùng Preconditions để loại trừ namespace hệ thống + Pod của Job/CronJob
+          kinds: ["Pod"]
       preconditions:
         all:
-          # 1) Bỏ qua các namespace hệ thống
-          - key: "{{ request.object.metadata.namespace }}"
-            operator: NotIn
-            value:
-              - kube-system
-              - kyverno
-              - argocd
-
-          # 2) Bỏ qua Pod thuộc Job/CronJob (thường có label job-name)
-          # Nếu label job-name không tồn tại -> '' => vẫn check (Pod thường)
-          - key: "{{ request.object.metadata.labels.\"job-name\" || '' }}"
-            operator: Equals
-            value: ""
-
+          # Không áp dụng ở các namespace hệ thống
+          - key: "{{ request.namespace }}"
+            operator: AnyNotIn
+            value: ["kube-system", "kyverno", "argocd"]
+          # Bỏ qua Pod do Job/CronJob tạo (ownerRef là Job)
+          - key: "Job"
+            operator: AnyNotIn
+            value: "{{ request.object.metadata.ownerReferences[].kind || `[]` }}"
       validate:
         message: "Container phải khai báo livenessProbe và readinessProbe (trừ Job/CronJob)."
         pattern:
           spec:
             containers:
-              - (name): "*"
-                livenessProbe: {}
-                readinessProbe: {}
+              - livenessProbe:
+                  periodSeconds: "?*"
+                readinessProbe:
+                  periodSeconds: "?*"
