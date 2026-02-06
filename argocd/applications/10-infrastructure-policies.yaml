@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: infrastructure-policies
+  namespace: argocd
+spec:
+  project: platform # Hoặc 'default' tùy bạn đã tạo project chưa
+  source:
+    repoURL: https://github.com/devlin9824/gitops-platform.git
+    path: infrastructure/kyverno-policies
+    targetRevision: HEAD
+    helm:
+      valueFiles: []
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
