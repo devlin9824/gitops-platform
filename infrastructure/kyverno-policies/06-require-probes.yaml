@@ -1,0 +1,30 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-probes
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-probes
+      match:
+        resources:
+          kinds: ["Pod"]
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+        # [FIX] Bỏ qua nếu Pod là Job/CronJob (thường có label job-name)
+        any:
+        - resources:
+            selector:
+              matchExpressions:
+              - {key: job-name, operator: Exists}
+      validate:
+        message: "Container phải khai báo livenessProbe và readinessProbe (trừ Job/CronJob)."
+        pattern:
+          spec:
+            containers:
+              - livenessProbe:
+                  periodSeconds: "?*"
+                readinessProbe:
+                  periodSeconds: "?*"

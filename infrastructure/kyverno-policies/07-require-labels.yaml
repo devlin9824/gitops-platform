@@ -1,0 +1,22 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-team-labels
+      match:
+        resources:
+          kinds: ["Pod"]
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+      validate:
+        message: "Pod phải có label 'owner' và 'env'."
+        pattern:
+          metadata:
+            labels:
+              owner: "?*"
+              env: "?*"
