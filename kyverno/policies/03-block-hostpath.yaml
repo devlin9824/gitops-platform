@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: block-sensitive-hostpath
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-sensitive-hostpath
+      match:
+        resources:
+          kinds: ["Pod"]
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+      validate:
+        message: "Không cho phép mount hostPath nhạy cảm (/, /etc, /proc, /sys, /etc/passwd, ...)"
+        foreach:
+          - list: "request.object.spec.volumes[?hostPath]"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ regex_match('^/$|^/etc($|/)|^/proc($|/)|^/sys($|/)|^/etc/passwd$|^/etc/shadow$', element.hostPath.path) }}"
+                    operator: Equals
+                    value: true

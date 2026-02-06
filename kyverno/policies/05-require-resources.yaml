@@ -1,0 +1,35 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-requests-limits
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-resources-containers
+      match:
+        resources:
+          kinds: ["Pod"]
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+      validate:
+        message: "Containers phải khai báo resources.requests/limits cpu & memory"
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"
+            =(initContainers):
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"

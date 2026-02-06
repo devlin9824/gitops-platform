@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-01-privileged
+  namespace: policy-test
+spec:
+  containers:
+    - name: c
+      image: nginx:1.25
+      securityContext:
+        privileged: true

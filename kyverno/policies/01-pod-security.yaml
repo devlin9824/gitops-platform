@@ -1,0 +1,46 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pod-security-nonroot-no-privileged
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-runasnonroot
+      match:
+        resources:
+          kinds: ["Pod"]
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+      validate:
+        message: "Pod phải khai báo spec.securityContext.runAsNonRoot=true"
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+
+    - name: disallow-privileged
+      match:
+        resources:
+          kinds: ["Pod"]
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+      validate:
+        message: "Không cho phép container chạy privileged=true"
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.securityContext.privileged || false }}"
+                    operator: Equals
+                    value: true
+          - list: "request.object.spec.initContainers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.securityContext.privileged || false }}"
+                    operator: Equals
+                    value: true

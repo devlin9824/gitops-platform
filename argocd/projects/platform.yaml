@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  description: "Platform components: Kyverno + cluster policies"
+  sourceRepos:
+    - "*"   # siết chặt lại bằng repo URL của bạn sau
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "kyverno.io"
+      kind: "ClusterPolicy"
+    - group: "*"
+      kind: "Namespace"
