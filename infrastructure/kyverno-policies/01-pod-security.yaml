@@ -10,11 +10,20 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
+      preconditions:
+        any:
+          - key: "{{ request.namespaceLabels.\"policy.tier\" || '' }}"
+            operator: NotEquals
+            value: "system"
+          - key: "{{ request.object.metadata.labels.\"policy.allow-root\" || '' }}"
+            operator: NotEquals
+            value: "true"
       validate:
-        message: "Pod phải khai báo spec.securityContext.runAsNonRoot=true"
+        message: "Pod phải khai báo spec.securityContext.runAsNonRoot=true (Tier 'system' cần label 'policy.allow-root: \"true\"' để bypass)"
         pattern:
           spec:
             securityContext:
@@ -24,11 +33,20 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
+      preconditions:
+        any:
+          - key: "{{ request.namespaceLabels.\"policy.tier\" || '' }}"
+            operator: NotEquals
+            value: "system"
+          - key: "{{ request.object.metadata.labels.\"policy.allow-privileged\" || '' }}"
+            operator: NotEquals
+            value: "true"
       validate:
-        message: "Không cho phép container chạy privileged=true"
+        message: "Không cho phép container chạy privileged=true (Tier 'system' cần label 'policy.allow-privileged: \"true\"' để bypass)"
         foreach:
           - list: "request.object.spec.containers"
             deny:
@@ -37,7 +55,7 @@ spec:
                   - key: "{{ element.securityContext.privileged || false }}"
                     operator: Equals
                     value: true
-          - list: "request.object.spec.initContainers"
+          - list: "request.object.spec.initContainers || `[]`"
             deny:
               conditions:
                 any:

@@ -3,7 +3,6 @@ kind: ClusterPolicy
 metadata:
   name: require-probes
   annotations:
-    # Chỉ auto-gen cho workload dài hạn, không auto-gen cho Job/CronJob
     pod-policies.kyverno.io/autogen-controllers: Deployment,StatefulSet,DaemonSet
 spec:
   validationFailureAction: Enforce
@@ -13,13 +12,12 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
       preconditions:
         all:
-          # Không áp dụng ở các namespace hệ thống
-          - key: "{{ request.namespace }}"
-            operator: AnyNotIn
-            value: ["kube-system", "kyverno", "argocd"]
-          # Bỏ qua Pod do Job/CronJob tạo (ownerRef là Job)
           - key: "Job"
             operator: AnyNotIn
             value: "{{ request.object.metadata.ownerReferences[].kind || `[]` }}"

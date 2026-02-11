@@ -9,14 +9,11 @@ spec:
     - name: check-team-labels
       match:
         resources:
-          kinds:
-            - Pod
-      exclude:
-        resources:
-          namespaces:
-            - kube-system
-            - kyverno
-            - argocd
+          kinds: ["Pod"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
       validate:
         message: "Pod phải có label 'owner' và 'env'."
         pattern:

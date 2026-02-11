@@ -10,11 +10,12 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
       validate:
-        message: "Không được dùng image tag latest hoặc image không tag"
+        message: "Không được dùng image tag latest hoặc image không tag/digest (Hygiene policy)"
         foreach:
           - list: "request.object.spec.containers"
             deny:
@@ -30,7 +31,7 @@ spec:
                   - key: "{{ contains(element.image, '@') }}"
                     operator: Equals
                     value: false
-          - list: "request.object.spec.initContainers"
+          - list: "request.object.spec.initContainers || `[]`"
             deny:
               conditions:
                 any:

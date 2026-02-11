@@ -10,11 +10,12 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
       validate:
-        message: "Containers phải khai báo resources.requests/limits cpu & memory"
+        message: "Containers phải khai báo resources.requests/limits cpu & memory (Hygiene policy)"
         pattern:
           spec:
             containers:

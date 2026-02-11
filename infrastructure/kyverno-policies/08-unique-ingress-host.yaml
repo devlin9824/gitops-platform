@@ -10,6 +10,10 @@ spec:
       match:
         resources:
           kinds: ["Ingress"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
       context:
         - name: all_hosts
           apiCall:

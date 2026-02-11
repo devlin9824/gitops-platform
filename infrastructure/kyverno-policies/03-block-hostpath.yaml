@@ -10,11 +10,20 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
+          namespaceSelector:
+            matchExpressions:
+              - key: policy.tier
+                operator: Exists
+      preconditions:
+        any:
+          - key: "{{ request.namespaceLabels.\"policy.tier\" || '' }}"
+            operator: NotEquals
+            value: "system"
+          - key: "{{ request.object.metadata.labels.\"policy.allow-hostpath\" || '' }}"
+            operator: NotEquals
+            value: "true"
       validate:
-        message: "Không cho phép mount hostPath nhạy cảm (/, /etc, /proc, /sys, /etc/passwd, ...)"
+        message: "Không cho phép mount hostPath nhạy cảm. Tier 'system' cần pod label 'policy.allow-hostpath: \"true\"' để bypass."
         foreach:
           - list: "request.object.spec.volumes[?hostPath]"
             deny:
