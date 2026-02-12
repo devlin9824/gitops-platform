@@ -10,10 +10,9 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-          namespaceSelector:
-            matchExpressions:
-              - key: policy.tier
-                operator: Exists
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
       validate:
         message: "Pod phải có label 'owner' và 'env'."
         pattern:

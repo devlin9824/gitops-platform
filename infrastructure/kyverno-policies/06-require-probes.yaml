@@ -12,12 +12,15 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-          namespaceSelector:
-            matchExpressions:
-              - key: policy.tier
-                operator: Exists
+      # Logic: Không nằm trong ns hệ thống VÀ không có label skip VÀ không phải là Job
       preconditions:
         all:
+          - key: "{{ request.namespace }}"
+            operator: AnyNotIn
+            value: ["kube-system", "kyverno", "argocd"]
+          - key: "{{ request.namespaceLabels.\"policy.kyverno.io/skip-probes\" || 'false' }}"
+            operator: NotEquals
+            value: "true"
           - key: "Job"
             operator: AnyNotIn
             value: "{{ request.object.metadata.ownerReferences[].kind || `[]` }}"

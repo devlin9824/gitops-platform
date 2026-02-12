@@ -10,20 +10,17 @@ spec:
       match:
         resources:
           kinds: ["Pod"]
-          namespaceSelector:
-            matchExpressions:
-              - key: policy.tier
-                operator: Exists
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
+      # Bypass bằng cách gán label cho namespace: policy.kyverno.io/allow-sensitive-hostpath="true"
       preconditions:
-        any:
-          - key: "{{ request.namespaceLabels.\"policy.tier\" || '' }}"
-            operator: NotEquals
-            value: "system"
-          - key: "{{ request.object.metadata.labels.\"policy.allow-hostpath\" || '' }}"
+        all:
+          - key: "{{ request.namespaceLabels.\"policy.kyverno.io/allow-sensitive-hostpath\" || 'false' }}"
             operator: NotEquals
             value: "true"
       validate:
-        message: "Không cho phép mount hostPath nhạy cảm. Tier 'system' cần pod label 'policy.allow-hostpath: \"true\"' để bypass."
+        message: "Không cho phép mount hostPath nhạy cảm (/, /etc, /proc, /sys...). Cần ns label policy.kyverno.io/allow-sensitive-hostpath='true' để bypass."
         foreach:
           - list: "request.object.spec.volumes[?hostPath]"
             deny:

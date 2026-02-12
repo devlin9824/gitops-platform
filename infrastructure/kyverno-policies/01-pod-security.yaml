@@ -6,47 +6,43 @@ spec:
   validationFailureAction: Enforce
   background: true
   rules:
+    # 1. Require runAsNonRoot
+    # Bypass bằng cách gán label cho namespace: policy.kyverno.io/allow-root="true"
     - name: require-runasnonroot
       match:
         resources:
           kinds: ["Pod"]
-          namespaceSelector:
-            matchExpressions:
-              - key: policy.tier
-                operator: Exists
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
       preconditions:
-        any:
-          - key: "{{ request.namespaceLabels.\"policy.tier\" || '' }}"
-            operator: NotEquals
-            value: "system"
-          - key: "{{ request.object.metadata.labels.\"policy.allow-root\" || '' }}"
+        all:
+          - key: "{{ request.namespaceLabels.\"policy.kyverno.io/allow-root\" || 'false' }}"
             operator: NotEquals
             value: "true"
       validate:
-        message: "Pod phải khai báo spec.securityContext.runAsNonRoot=true (Tier 'system' cần label 'policy.allow-root: \"true\"' để bypass)"
+        message: "Pod phải khai báo spec.securityContext.runAsNonRoot=true (Cần ns label policy.kyverno.io/allow-root='true' để bypass)"
         pattern:
           spec:
             securityContext:
               runAsNonRoot: true
 
+    # 2. Disallow privileged
+    # Bypass bằng cách gán label cho namespace: policy.kyverno.io/allow-privileged="true"
     - name: disallow-privileged
       match:
         resources:
           kinds: ["Pod"]
-          namespaceSelector:
-            matchExpressions:
-              - key: policy.tier
-                operator: Exists
+      exclude:
+        resources:
+          namespaces: ["kube-system", "kyverno", "argocd"]
       preconditions:
-        any:
-          - key: "{{ request.namespaceLabels.\"policy.tier\" || '' }}"
-            operator: NotEquals
-            value: "system"
-          - key: "{{ request.object.metadata.labels.\"policy.allow-privileged\" || '' }}"
+        all:
+          - key: "{{ request.namespaceLabels.\"policy.kyverno.io/allow-privileged\" || 'false' }}"
             operator: NotEquals
             value: "true"
       validate:
-        message: "Không cho phép container chạy privileged=true (Tier 'system' cần label 'policy.allow-privileged: \"true\"' để bypass)"
+        message: "Không cho phép container chạy privileged=true (Cần ns label policy.kyverno.io/allow-privileged='true' để bypass)"
         foreach:
           - list: "request.object.spec.containers"
             deny:
@@ -55,7 +51,7 @@ spec:
                   - key: "{{ element.securityContext.privileged || false }}"
                     operator: Equals
                     value: true
-          - list: "request.object.spec.initContainers || `[]`"
+          - list: "request.object.spec.initContainers"
             deny:
               conditions:
                 any:
