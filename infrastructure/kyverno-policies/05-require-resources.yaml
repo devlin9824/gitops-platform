@@ -13,14 +13,13 @@ spec:
       exclude:
         resources:
           namespaces: ["kube-system", "kyverno", "argocd"]
-      # Bypass bằng cách gán label cho namespace: policy.kyverno.io/skip-resources="true"
       preconditions:
         all:
           - key: "{{ request.namespaceLabels.\"policy.kyverno.io/skip-resources\" || 'false' }}"
             operator: NotEquals
             value: "true"
       validate:
-        message: "Containers phải khai báo resources.requests/limits cpu & memory (hoặc dùng ns label skip-resources='true')"
+        message: "Access Denied: Thiếu cấu hình resources requests/limits."
         pattern:
           spec:
             containers:

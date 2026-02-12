@@ -6,8 +6,6 @@ spec:
   validationFailureAction: Enforce
   background: true
   rules:
-    # 1. Require runAsNonRoot
-    # Bypass bằng cách gán label cho namespace: policy.kyverno.io/allow-root="true"
     - name: require-runasnonroot
       match:
         resources:
@@ -21,14 +19,12 @@ spec:
             operator: NotEquals
             value: "true"
       validate:
-        message: "Pod phải khai báo spec.securityContext.runAsNonRoot=true (Cần ns label policy.kyverno.io/allow-root='true' để bypass)"
+        message: "Access Denied: Container bắt buộc phải chạy với quyền non-root."
         pattern:
           spec:
             securityContext:
               runAsNonRoot: true
 
-    # 2. Disallow privileged
-    # Bypass bằng cách gán label cho namespace: policy.kyverno.io/allow-privileged="true"
     - name: disallow-privileged
       match:
         resources:
@@ -42,7 +38,7 @@ spec:
             operator: NotEquals
             value: "true"
       validate:
-        message: "Không cho phép container chạy privileged=true (Cần ns label policy.kyverno.io/allow-privileged='true' để bypass)"
+        message: "Access Denied: Không cho phép chạy mode Privileged."
         foreach:
           - list: "request.object.spec.containers"
             deny:
