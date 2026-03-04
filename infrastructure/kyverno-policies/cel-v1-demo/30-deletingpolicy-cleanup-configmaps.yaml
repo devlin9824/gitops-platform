@@ -1,0 +1,17 @@
+apiVersion: policies.kyverno.io/v1
+kind: NamespacedDeletingPolicy
+metadata:
+  name: cleanup-demo-configmaps
+  namespace: kyverno-demo
+spec:
+  schedule: "*/1 * * * *"   # mỗi phút (demo cho dễ thấy)
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["*"]
+        resources: ["configmaps"]
+        scope: "Namespaced"
+  conditions:
+    - name: markedForCleanup
+      expression: "has(object.metadata.labels.cleanup) && object.metadata.labels.cleanup == 'true'"
