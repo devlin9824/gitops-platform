@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-3-fail-signature
+  namespace: kyverno-demo
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+  containers:
+    - name: firewall
+      # ÉP KYVERNO PHẢI KIỂM TRA CHỮ KÝ!
+      image: docker.io/d4vlin/firewall-service@sha256:697e4a5799ea01ba22e39d0c09b78594b5134a137ccd6c1d485dbb154e20fa53
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+      securityContext:
+        runAsNonRoot: true
+        privileged: false

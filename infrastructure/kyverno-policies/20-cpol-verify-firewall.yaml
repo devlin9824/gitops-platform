@@ -4,8 +4,8 @@ metadata:
   name: verify-firewall-service-signed
 spec:
   validationFailureAction: Enforce
+  failurePolicy: Fail
   background: false
-
   rules:
     - name: verify-firewall-image
       match:
@@ -14,10 +14,10 @@ spec:
             - Pod
           namespaces:
             - kyverno-demo
-
       verifyImages:
         - imageReferences:
-            - "docker.io/d4vlin/firewall-service*"
+            - "index.docker.io/d4vlin/firewall-service*"
+          mutateDigest: true
           attestors:
             - entries:
                 - keys:
