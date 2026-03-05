@@ -1,56 +1,27 @@
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: pod-security-nonroot-no-privileged
 spec:
-  validationFailureAction: Enforce
-  background: true
-  rules:
-    - name: require-runasnonroot
-      match:
-        resources:
-          kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
-      preconditions:
-        all:
-          - key: "{{ request.namespaceLabels.\"policy.kyverno.io/allow-root\" || 'false' }}"
-            operator: NotEquals
-            value: "true"
-      validate:
-        message: "Access Denied: Container bắt buộc phải chạy với quyền non-root."
-        pattern:
-          spec:
-            securityContext:
-              runAsNonRoot: true
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
 
-    - name: disallow-privileged
-      match:
-        resources:
-          kinds: ["Pod"]
-      exclude:
-        resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
-      preconditions:
-        all:
-          - key: "{{ request.namespaceLabels.\"policy.kyverno.io/allow-privileged\" || 'false' }}"
-            operator: NotEquals
-            value: "true"
-      validate:
-        message: "Access Denied: Không cho phép chạy mode Privileged."
-        foreach:
-          - list: "request.object.spec.containers"
-            deny:
-              conditions:
-                any:
-                  - key: "{{ element.securityContext.privileged || false }}"
-                    operator: Equals
-                    value: true
-          - list: "request.object.spec.initContainers"
-            deny:
-              conditions:
-                any:
-                  - key: "{{ element.securityContext.privileged || false }}"
-                    operator: Equals
-                    value: true
+  validations:
+    - expression: >
+        object.spec.containers.all(c,
+          has(c.securityContext) &&
+          c.securityContext.runAsNonRoot == true
+        )
+      message: "Container bắt buộc phải chạy non-root."
+
+    - expression: >
+        object.spec.containers.all(c,
+          !has(c.securityContext.privileged) ||
+          c.securityContext.privileged == false
+        )
+      message: "Không cho phép chạy privileged mode."

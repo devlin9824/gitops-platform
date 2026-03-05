@@ -1,47 +1,20 @@
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: disallow-image-latest
 spec:
-  validationFailureAction: Enforce
-  background: true
-  rules:
-    - name: disallow-latest-or-untagged
-      match:
-        resources:
-          kinds: ["Pod"]
-          namespaceSelector:
-            matchExpressions:
-              - key: policy.tier
-                operator: Exists
-      validate:
-        message: "Không được dùng image tag latest hoặc image không tag/digest (Hygiene policy)"
-        foreach:
-          - list: "request.object.spec.containers"
-            deny:
-              conditions:
-                any:
-                  - key: "{{ regex_match('^.+:latest$', element.image) }}"
-                    operator: Equals
-                    value: true
-                all:
-                  - key: "{{ contains(element.image, ':') }}"
-                    operator: Equals
-                    value: false
-                  - key: "{{ contains(element.image, '@') }}"
-                    operator: Equals
-                    value: false
-          - list: "request.object.spec.initContainers || `[]`"
-            deny:
-              conditions:
-                any:
-                  - key: "{{ regex_match('^.+:latest$', element.image) }}"
-                    operator: Equals
-                    value: true
-                all:
-                  - key: "{{ contains(element.image, ':') }}"
-                    operator: Equals
-                    value: false
-                  - key: "{{ contains(element.image, '@') }}"
-                    operator: Equals
-                    value: false
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+
+  validations:
+    - expression: >
+        object.spec.containers.all(c,
+          c.image.contains(":") &&
+          !c.image.matches(".*:latest$")
+        )
+      message: "Không được dùng image tag latest hoặc image không tag."
