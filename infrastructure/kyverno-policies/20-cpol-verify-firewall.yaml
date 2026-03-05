@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-firewall-service-signed
+spec:
+  validationFailureAction: Enforce
+  background: false
+
+  rules:
+    - name: verify-firewall-image
+      match:
+        resources:
+          kinds:
+            - Pod
+          namespaces:
+            - kyverno-demo
+
+      verifyImages:
+        - imageReferences:
+            - "docker.io/d4vlin/firewall-service:*"
+          attestors:
+            - entries:
+                - keys:
+                    publicKeys: |
+                      -----BEGIN PUBLIC KEY-----
+                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERgxeNxC6iuA3A7NIgrSeokEkX/eY
+                      DlhMN+eo63ZnpughAS0t/qxj2+Qj+UlY5/Bewy98mLa+PnMkItw6XWNjsA==
+                      -----END PUBLIC KEY-----
