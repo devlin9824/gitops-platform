@@ -17,7 +17,7 @@ spec:
 
       verifyImages:
         - imageReferences:
-            - "docker.io/d4vlin/firewall-service:*"
+            - "docker.io/d4vlin/firewall-service*"
           attestors:
             - entries:
                 - keys:
