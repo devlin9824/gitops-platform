@@ -16,7 +16,7 @@ spec:
             - kyverno-demo
       verifyImages:
         - imageReferences:
-            - "index.docker.io/d4vlin/firewall-service*"
+            - "index.docker.io/d4vlin/firewall-service@sha256:*"
           mutateDigest: true
           attestors:
             - entries:
