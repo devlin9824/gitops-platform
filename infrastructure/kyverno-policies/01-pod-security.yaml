@@ -10,7 +10,20 @@ spec:
         apiVersions: ["v1"]
         operations: ["CREATE", "UPDATE"]
         resources: ["pods"]
-
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          lues:
+            - kube-system
+            - longhorn-system
+            - falco
+            - topolvm-system
+            - gitlab-system
+            - metallb-system
+            - argocd
+            - kyverno
+            - longhorn-system
   validations:
     - expression: >
         object.spec.containers.all(c,

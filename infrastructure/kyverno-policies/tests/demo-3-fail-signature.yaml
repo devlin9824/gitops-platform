@@ -10,7 +10,7 @@ spec:
   containers:
     - name: firewall
       # ÉP KYVERNO PHẢI KIỂM TRA CHỮ KÝ!
-      image: docker.io/d4vlin/firewall-service@sha256:697e4a5799ea01ba22e39d0c09b78594b5134a137ccd6c1d485dbb154e20fa53
+      image: index.docker.io/d4vlin/firewall-service@sha256:697e4a5799ea01ba22e39d0c09b78594b5134a137ccd6c1d485dbb154e20fa53
       resources:
         requests:
           cpu: 100m

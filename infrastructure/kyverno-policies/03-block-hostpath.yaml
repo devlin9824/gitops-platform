@@ -12,7 +12,7 @@ spec:
           kinds: ["Pod"]
       exclude:
         resources:
-          namespaces: ["kube-system", "kyverno", "argocd"]
+          namespaces: ["kube-system", "kyverno", "argocd", "longhorn-system"]
       preconditions:
         all:
           - key: "{{ request.namespaceLabels.\"policy.kyverno.io/allow-sensitive-hostpath\" || 'false' }}"
