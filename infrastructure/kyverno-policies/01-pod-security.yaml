@@ -16,26 +16,24 @@ spec:
           operator: NotIn
           values:
             - kube-system
-            - longhorn-system
-            - falco
-            - topolvm-system
-            - gitlab-system
-            - gitlab
-            - metallb-system
-            - argocd
             - kyverno
+            - argocd
             - longhorn-system
+            - falco        # Liệt kê chính xác, không dùng *
+            - falco-lab
+            - falco-test
+            - gitlab-system
+            - gitlab-runner
   validations:
     - expression: >
-        object.spec.containers.all(c,
-          has(c.securityContext) &&
+        object.spec.containers.all(c, 
+          has(c.securityContext) && has(c.securityContext.runAsNonRoot) && 
           c.securityContext.runAsNonRoot == true
         )
-      message: "Container bắt buộc phải chạy non-root."
-
+      message: "Container bắt buộc phải khai báo và chạy non-root."
     - expression: >
-        object.spec.containers.all(c,
-          !has(c.securityContext.privileged) ||
+        object.spec.containers.all(c, 
+          !has(c.securityContext) || !has(c.securityContext.privileged) || 
           c.securityContext.privileged == false
         )
       message: "Không cho phép chạy privileged mode."
