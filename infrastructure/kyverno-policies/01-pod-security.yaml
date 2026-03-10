@@ -17,9 +17,10 @@ spec:
           values:
             - kube-system
             - longhorn-system
-            - falco
+            - "falco*"
             - topolvm-system
             - gitlab-system
+            - "gitlab*"
             - metallb-system
             - argocd
             - kyverno

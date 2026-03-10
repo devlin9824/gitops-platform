@@ -12,7 +12,7 @@ spec:
           kinds: ["Pod"]
       exclude:
         resources:
-          namespaces: ["kube-system", "kyverno", "argocd", "longhorn-system", "falco"]
+          namespaces: ["kube-system", "kyverno", "argocd", "longhorn-system", "falco*", "gitlab-system", "gitlab*"]
       preconditions:
         all:
           - key: "{{ request.namespaceLabels.\"policy.kyverno.io/skip-resources\" || 'false' }}"
