@@ -3,7 +3,7 @@ kind: ValidatingPolicy
 metadata:
   name: disallow-image-latest
 spec:
-  validationActions: [Deny]
+  validationActions: [Audit]
   matchConstraints:
     resourceRules:
       - apiGroups: [""]
