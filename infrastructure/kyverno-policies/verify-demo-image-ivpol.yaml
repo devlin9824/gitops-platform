@@ -31,7 +31,6 @@ spec:
   attestors:
     - name: cosignkey
       cosign:
-        ignoreTlog: true
         key:
           data: |-
             -----BEGIN PUBLIC KEY-----
