@@ -6,32 +6,23 @@ metadata:
     policies.kyverno.io/title: Verify Demo Image Signature
     policies.kyverno.io/category: Software Supply Chain Security
     policies.kyverno.io/severity: high
-    policies.kyverno.io/subject: Pod
-    policies.kyverno.io/description: >-
-      Verify images from the internal demo registry using a Cosign public key.
 spec:
   webhookConfiguration:
     timeoutSeconds: 30
-
   evaluation:
     background:
       enabled: false
-
   validationActions:
     - Audit
 
   matchConstraints:
     resourceRules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - pods
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
 
+  # Bạn cấu hình đoạn này RẤT CHUẨN: Chỉ bắt bẻ các Pod dùng ảnh từ IP này, không làm chết cụm!
   matchImageReferences:
     - glob: "192.168.105.24:32080/demo/*"
 
@@ -50,5 +41,11 @@ spec:
 
   validations:
     - expression: >-
-        images.containers.map(image, verifyImageSignatures(image, [attestors.cosignkey])).all(e, e > 0)
-      message: "Image chưa có chữ ký hợp lệ theo Cosign public key."
+        images.containers.all(name, verifyImageSignatures(images.containers[name], [attestors.cosignkey]) > 0)
+      message: "Container chính chưa có chữ ký hợp lệ theo Cosign public key."
+    - expression: >-
+        images.?initContainers.orValue({}).all(name, verifyImageSignatures(images.initContainers[name], [attestors.cosignkey]) > 0)
+      message: "Init Container chưa có chữ ký hợp lệ."
+    - expression: >-
+        images.?ephemeralContainers.orValue({}).all(name, verifyImageSignatures(images.ephemeralContainers[name], [attestors.cosignkey]) > 0)
+      message: "Ephemeral Container chưa có chữ ký hợp lệ."
