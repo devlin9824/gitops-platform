@@ -1,0 +1,54 @@
+apiVersion: policies.kyverno.io/v1
+kind: ImageValidatingPolicy
+metadata:
+  name: verify-demo-image-signature
+  annotations:
+    policies.kyverno.io/title: Verify Demo Image Signature
+    policies.kyverno.io/category: Software Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Verify images from the internal demo registry using a Cosign public key.
+spec:
+  webhookConfiguration:
+    timeoutSeconds: 30
+
+  evaluation:
+    background:
+      enabled: false
+
+  validationActions:
+    - Audit
+
+  matchConstraints:
+    resourceRules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - pods
+
+  matchImageReferences:
+    - glob: "192.168.105.24:32080/demo/*"
+
+  credentials:
+    allowInsecureRegistry: true
+
+  attestors:
+    - name: cosignkey
+      cosign:
+        key:
+          data: |-
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpfbmFhkNwTCo468eu0JniiHtM5WG
+            DbAFOkI4pI1pANrk5T+mhcJT1HWr9+vBuzdTCPpXL9sgkrqT6sUCGPe2hw==
+            -----END PUBLIC KEY-----
+
+  validations:
+    - expression: >-
+        images.containers.map(image, verifyImageSignatures(image, [attestors.cosignkey])).all(e, e > 0)
+      message: "Image chưa có chữ ký hợp lệ theo Cosign public key."
