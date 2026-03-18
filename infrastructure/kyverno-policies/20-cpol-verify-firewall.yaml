@@ -20,7 +20,7 @@ spec:
                 - keys:
                     publicKeys: |
                       -----BEGIN PUBLIC KEY-----
-                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERgxeNxC6iuA3A7NIgrSeokEkX/eY
-                      DlhMN+eo63ZnpughAS0t/qxj2+Qj+UlY5/Bewy98mLa+PnMkItw6XWNjsA==
+                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpfbmFhkNwTCo468eu0JniiHtM5WG
+                      DbAFOkI4pI1pANrk5T+mhcJT1HWr9+vBuzdTCPpXL9sgkrqT6sUCGPe2hw==
                       -----END PUBLIC KEY-----
           mutateDigest: false

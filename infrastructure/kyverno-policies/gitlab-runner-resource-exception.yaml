@@ -1,0 +1,17 @@
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: allow-gitlab-runner-init-no-resources
+  namespace: gitlab-runner
+spec:
+  exceptions:
+    - policyName: require-requests-limits
+      ruleNames:
+        - require-resources-containers
+  match:
+    any:
+      - resources:
+          namespaces:
+            - gitlab-runner
+          kinds:
+            - Pod
