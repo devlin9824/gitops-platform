@@ -27,7 +27,8 @@ spec:
 
   credentials:
     allowInsecureRegistry: true
-
+    secrets:
+      - default/harbor-regcred  
   attestors:
     - name: cosignkey
       cosign:
