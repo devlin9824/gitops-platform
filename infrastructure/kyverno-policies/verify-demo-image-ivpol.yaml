@@ -13,7 +13,7 @@ spec:
     background:
       enabled: false
   validationActions:
-    - Deny
+    - Audit
 
   matchConstraints:
     resourceRules:
