@@ -1,0 +1,39 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: image-registry-allowlist
+  annotations:
+    policies.kyverno.io/title: Image registry allowlist
+    policies.kyverno.io/category: Supply Chain
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >
+      Audit các namespace mục tiêu nếu dùng image ngoài danh sách registry được tổ chức cho phép trong giai đoạn baseline.
+spec:
+  validationActions: [Audit]
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: [deployments, daemonsets, statefulsets, jobs, cronjobs]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  variables:
+    - name: isTargetNamespace
+      expression: namespaceObject.metadata.name in ["default", "outline", "rnd-grafana", "soar", "vaultwarden"]
+    - name: allContainers
+      expression: object.spec.containers + object.spec.?initContainers.orValue([]) + object.spec.?ephemeralContainers.orValue([])
+    - name: allowedRegistries
+      expression: '["harbor.ncsgroup.vn/", "registry.ncsgroup.vn/", "quay.io/", "registry.k8s.io/", "ghcr.io/", "public.ecr.aws/", "docker.elastic.co/", "registry.gitlab.com/", "docker.io/", "docker.getoutline.com/"]'
+  validations:
+    - expression: >
+        !variables.isTargetNamespace ||
+        variables.allContainers.all(c,
+          variables.allowedRegistries.exists(reg, c.image.startsWith(reg))
+        )
+      message: Images in target namespaces should come from the approved registry list defined for the current baseline phase.

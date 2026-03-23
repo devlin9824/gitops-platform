@@ -1,0 +1,50 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: pod-runtime-hardening
+  annotations:
+    policies.kyverno.io/title: Pod runtime hardening
+    policies.kyverno.io/category: Pod Security
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >
+      Audit các hardening sâu hơn cho các namespace mục tiêu: readOnlyRootFilesystem,
+      drop capabilities và chỉ add lại NET_BIND_SERVICE khi thật sự cần.
+spec:
+  validationActions: [Audit]
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: [deployments, daemonsets, statefulsets, jobs, cronjobs]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  variables:
+    - name: isTargetNamespace
+      expression: namespaceObject.metadata.name in ["default", "outline", "rnd-grafana", "soar", "vaultwarden"]
+    - name: allContainers
+      expression: object.spec.containers + object.spec.?initContainers.orValue([]) + object.spec.?ephemeralContainers.orValue([])
+  validations:
+    - expression: >
+        !variables.isTargetNamespace ||
+        variables.allContainers.all(c,
+          c.?securityContext.?readOnlyRootFilesystem.orValue(false) == true
+        )
+      message: Containers should set readOnlyRootFilesystem=true where application design allows it.
+    - expression: >
+        !variables.isTargetNamespace ||
+        variables.allContainers.all(c,
+          c.?securityContext.?capabilities.?drop.orValue([]).exists(d, d == "ALL")
+        )
+      message: Containers should drop ALL Linux capabilities by default.
+    - expression: >
+        !variables.isTargetNamespace ||
+        variables.allContainers.all(c,
+          c.?securityContext.?capabilities.?add.orValue([]).all(a, a == "NET_BIND_SERVICE")
+        )
+      message: Only NET_BIND_SERVICE should be re-added when an application genuinely needs privileged low ports.

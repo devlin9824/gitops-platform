@@ -1,0 +1,55 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: rbac-guardrails
+  annotations:
+    policies.kyverno.io/title: RBAC guardrails
+    policies.kyverno.io/category: Identity
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Role, ClusterRole, RoleBinding, ClusterRoleBinding
+    policies.kyverno.io/description: >
+      Audit broad-scope RBAC do người dùng tạo trong các namespace mục tiêu: cấm wildcard, cấm bind/escalate/impersonate,
+      cấm bind cluster-admin và cấm system:masters. Bỏ qua system-generated objects và cluster-scoped RBAC ngoài phạm vi namespace mục tiêu.
+spec:
+  validationActions: [Audit]
+  evaluation:
+    background:
+      enabled: true
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["rbac.authorization.k8s.io"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["roles", "clusterroles", "rolebindings", "clusterrolebindings"]
+  variables:
+    - name: isTargetNamespace
+      expression: object.?metadata.?namespace.orValue("") in ["default", "outline", "rnd-grafana", "soar", "vaultwarden"]
+    - name: isRoleLike
+      expression: object.kind in ["Role", "ClusterRole"]
+    - name: isBindingLike
+      expression: object.kind in ["RoleBinding", "ClusterRoleBinding"]
+    - name: isSystemGenerated
+      expression: object.metadata.name.startsWith("system:") || object.metadata.?annotations["kubernetes.io/bootstrapping"].orValue("") == "rbac-defaults"
+  validations:
+    - expression: >
+        variables.isSystemGenerated || !variables.isTargetNamespace || !variables.isRoleLike ||
+        object.rules.orValue([]).all(r,
+          !r.?verbs.orValue([]).exists(v, v == "*") &&
+          !r.?resources.orValue([]).exists(res, res == "*") &&
+          !r.?apiGroups.orValue([]).exists(g, g == "*")
+        )
+      message: RBAC wildcards in verbs/resources/apiGroups should be avoided.
+    - expression: >
+        variables.isSystemGenerated || !variables.isTargetNamespace || !variables.isRoleLike ||
+        object.rules.orValue([]).all(r,
+          !r.?verbs.orValue([]).exists(v, v in ["bind", "escalate", "impersonate"])
+        )
+      message: RBAC verbs bind, escalate and impersonate should not be granted by default.
+    - expression: >
+        variables.isSystemGenerated || !variables.isTargetNamespace || !variables.isBindingLike ||
+        !(has(object.roleRef) && object.roleRef.kind in ["Role", "ClusterRole"] && object.roleRef.name == "cluster-admin")
+      message: Binding to cluster-admin should be avoided.
+    - expression: >
+        variables.isSystemGenerated || !variables.isTargetNamespace || !variables.isBindingLike ||
+        object.subjects.orValue([]).all(s, !(s.kind == "Group" && s.name == "system:masters"))
+      message: Binding the system:masters group should be avoided.

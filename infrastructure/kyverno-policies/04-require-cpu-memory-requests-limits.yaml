@@ -1,0 +1,40 @@
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: require-cpu-memory-requests-limits
+  annotations:
+    policies.kyverno.io/title: Require CPU and memory requests/limits
+    policies.kyverno.io/category: Availability
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >
+      Audit các namespace mục tiêu nếu container thiếu CPU/memory requests hoặc limits.
+spec:
+  validationActions: [Audit]
+  evaluation:
+    background:
+      enabled: true
+  autogen:
+    podControllers:
+      controllers: [deployments, daemonsets, statefulsets, jobs, cronjobs]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  variables:
+    - name: isTargetNamespace
+      expression: namespaceObject.metadata.name in ["default", "outline", "rnd-grafana", "soar", "vaultwarden"]
+    - name: containers
+      expression: object.spec.containers + object.spec.?initContainers.orValue([])
+  validations:
+    - expression: >
+        !variables.isTargetNamespace ||
+        variables.containers.all(c,
+          c.resources.?requests[?"cpu"].hasValue() &&
+          c.resources.?requests[?"memory"].hasValue() &&
+          c.resources.?limits[?"cpu"].hasValue() &&
+          c.resources.?limits[?"memory"].hasValue()
+        )
+      message: Containers in target namespaces must define CPU/memory requests and limits.
